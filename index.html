@@ -63,7 +63,19 @@
       <fieldset class="control-group bg-section">
         <legend>Bakgrunnsbilde</legend>
         <a href="https://openverse.org/search/image?q=tryvann+winter" target="_blank" rel="noopener noreferrer" class="image-link">Finn gratis bilder på Openverse</a>
-        <div class="preset-images" id="presetImages"></div>
+        <div class="preset-images-wrapper">
+          <div class="preset-images" id="presetImages"></div>
+          <button type="button" class="preset-add-btn" id="addColorBg" title="Legg til fargebakgrunn">+</button>
+        </div>
+        <div class="control-group bg-color-picker" id="bgColorPicker" style="display: none;">
+          <label>Bakgrunnsfarge</label>
+          <div class="colour-row">
+            <div class="preset-colours" id="presetBgColours"></div>
+            <input type="color" id="bgColorPickerInput" value="#ffffff">
+            <input type="text" id="bgColorHex" value="#ffffff" class="hex-input">
+          </div>
+          <button type="button" id="clearBgColor" class="secondary">Fjern farge</button>
+        </div>
         <div class="drop-zone" id="dropZone">Dra og slipp bilde her, eller</div>
         <button type="button" id="pickFile">Velg fil</button>
         <input type="file" id="fileInput" accept="image/*" hidden>
@@ -97,7 +109,7 @@
           </div>
           <div class="slider-row slider-row-full">
             <label>Metning</label>
-            <input type="range" id="bgSaturation" min="0" max="200" value="100">
+            <input type="range" id="bgSaturation" min="1" max="200" value="100">
             <div class="value-group">
               <span id="bgSaturationVal">100</span><span>%</span>
               <button type="button" class="reset-btn" data-reset="bgSaturation" data-value="100" title="Reset">↺</button>

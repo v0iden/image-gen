@@ -31,6 +31,7 @@
     color: "#ffffff",
     bgImage: null,
     bgImageUrl: null,
+    bgColor: null,
     bgX: 0,
     bgY: 0,
     bgScale: 100,
@@ -231,6 +232,13 @@
     } else {
       drawCheckerboard(ctx, w, h);
     }
+    
+    // Draw solid color background if set
+    if (state.bgColor && !state.bgImage) {
+      ctx.fillStyle = state.bgColor;
+      ctx.fillRect(0, 0, w, h);
+    }
+    
     if (state.bgImage && state.bgImage.complete) {
       drawBackgroundImage(ctx, w, h);
     }
@@ -444,6 +452,7 @@
       if (state.bgHue !== 0) params.set("bgHue", String(Math.round(state.bgHue)));
       if (state.bgColorize) params.set("bgColorize", "1");
       if (state.bgBlur !== 0) params.set("bgBlur", String(Math.round(state.bgBlur)));
+      if (state.bgColor) params.set("bgColor", state.bgColor.replace("#", "%23"));
     var qs = params.toString();
     var url = qs ? window.location.pathname + "?" + qs : window.location.pathname;
     window.history.replaceState({}, "", url);
@@ -459,6 +468,7 @@
     if (params.has("description")) state.description = params.get("description");
     if (params.has("color")) state.color = params.get("color").replace("%23", "#");
     if (params.has("image")) loadBgFromUrl(params.get("image"));
+    if (params.has("bgColor")) state.bgColor = params.get("bgColor").replace("%23", "#");
     var x = parseInt(params.get("bgX"), 10);
     var y = parseInt(params.get("bgY"), 10);
     var sc = parseInt(params.get("bgScale"), 10);
@@ -511,7 +521,7 @@
       state.bgY = parseInt(bgY.value, 10) || 0;
       state.bgScale = parseInt(bgScale.value, 10) || 100;
       state.bgBrightness = Math.max(1, parseInt(bgBrightness.value, 10) || 100);
-      state.bgSaturation = parseInt(bgSaturation.value, 10) || 100;
+      state.bgSaturation = Math.max(1, parseInt(bgSaturation.value, 10) || 100);
       state.bgHue = parseInt(bgHue.value, 10) || 0;
       state.bgColorize = bgColorize.checked;
       state.bgBlur = parseInt(bgBlur.value, 10) || 0;
@@ -591,7 +601,7 @@
         } else if (resetId === "bgSaturation") {
           bgSaturation.value = resetValue;
           bgSaturationVal.textContent = resetValue;
-          state.bgSaturation = parseInt(resetValue, 10);
+          state.bgSaturation = Math.max(1, parseInt(resetValue, 10));
         } else if (resetId === "bgHue") {
           bgHue.value = resetValue;
           bgHueVal.textContent = resetValue;
@@ -656,16 +666,150 @@
         btn.appendChild(img);
       };
       btn.onclick = function () {
+        state.bgColor = null;
+        var bgColorPicker = document.getElementById("bgColorPicker");
+        if (bgColorPicker) bgColorPicker.style.display = "none";
+        updateImageControlsVisibility();
         loadBgFromUrl(src);
       };
       container.appendChild(btn);
     });
+  }
+  
+  function initBgColorPicker() {
+    var addBtn = document.getElementById("addColorBg");
+    var colorPicker = document.getElementById("bgColorPicker");
+    var bgColorPickerInput = document.getElementById("bgColorPickerInput");
+    var bgColorHex = document.getElementById("bgColorHex");
+    var clearBtn = document.getElementById("clearBgColor");
+    var presetContainer = document.getElementById("presetBgColours");
+    
+    function updateBgColorUI() {
+      if (state.bgColor) {
+        colorPicker.style.display = "block";
+        bgColorPickerInput.value = state.bgColor;
+        bgColorHex.value = state.bgColor;
+        presetBgColoursActive();
+      } else {
+        colorPicker.style.display = "none";
+      }
+      updateImageControlsVisibility();
+    }
+    
+    function presetBgColoursActive() {
+      var hex = (state.bgColor || "").toLowerCase();
+      document.querySelectorAll("#presetBgColours button").forEach(function (btn) {
+        btn.classList.toggle("active", (btn.dataset.hex || "").toLowerCase() === hex);
+      });
+    }
+    
+    function initPresetBgColours() {
+      presetContainer.innerHTML = "";
+      (CONFIG.presetColours || []).forEach(function (p) {
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.title = p.label || p.hex;
+        btn.style.background = p.hex;
+        btn.dataset.hex = p.hex;
+        btn.addEventListener("click", function () {
+          state.bgColor = p.hex;
+          bgColorPickerInput.value = p.hex;
+          bgColorHex.value = p.hex;
+          updateImageControlsVisibility();
+          updateUrl();
+          presetBgColoursActive();
+          renderPreview();
+        });
+        presetContainer.appendChild(btn);
+      });
+    }
+    
+    addBtn.addEventListener("click", function () {
+      // Clear image when adding color background
+      if (state.bgImageUrl && state.bgImageUrl.indexOf("data:") === 0) URL.revokeObjectURL(state.bgImageUrl);
+      state.bgImage = null;
+      state.bgImageUrl = null;
+      updateClearButtonVisibility();
+      
+      if (!state.bgColor) {
+        state.bgColor = "#ffffff";
+        bgColorPickerInput.value = state.bgColor;
+        bgColorHex.value = state.bgColor;
+      }
+      updateBgColorUI();
+      updateImageControlsVisibility();
+      updateUrl();
+      renderPreview();
+    });
+    
+    bgColorPickerInput.addEventListener("input", function () {
+      bgColorHex.value = bgColorPickerInput.value;
+      state.bgColor = bgColorPickerInput.value;
+      updateImageControlsVisibility();
+      updateUrl();
+      presetBgColoursActive();
+      renderPreview();
+    });
+    
+    bgColorHex.addEventListener("input", function () {
+      if (/^#[0-9a-fA-F]{6}$/.test(bgColorHex.value)) {
+        bgColorPickerInput.value = bgColorHex.value;
+        state.bgColor = bgColorHex.value;
+        updateImageControlsVisibility();
+        updateUrl();
+        presetBgColoursActive();
+        renderPreview();
+      }
+    });
+    
+    clearBtn.addEventListener("click", function () {
+      state.bgColor = null;
+      updateBgColorUI();
+      updateImageControlsVisibility();
+      updateUrl();
+      renderPreview();
+    });
+    
+    initPresetBgColours();
+    updateBgColorUI();
+    
+    // Expose updateBgColorUI for external calls (e.g., after readUrl)
+    window.updateBgColorUI = updateBgColorUI;
   }
 
   function updateClearButtonVisibility() {
     var btn = document.getElementById("clearImage");
     if (btn) {
       btn.style.display = state.bgImageUrl ? "block" : "none";
+    }
+  }
+  
+  function updateImageControlsVisibility() {
+    var bgControls = document.querySelector(".bg-controls");
+    var clearImageBtn = document.getElementById("clearImage");
+    var dropZone = document.getElementById("dropZone");
+    var pickFileBtn = document.getElementById("pickFile");
+    var urlRow = document.querySelector(".url-row");
+    
+    // Hide image controls when color background is set (and no image)
+    var hasImage = state.bgImageUrl && !state.bgColor;
+    var hasColor = !!state.bgColor;
+    
+    if (bgControls) {
+      bgControls.style.display = hasImage ? "grid" : "none";
+    }
+    if (clearImageBtn) {
+      clearImageBtn.style.display = hasImage ? "block" : "none";
+    }
+    // Show drop zone, pick file, and URL row when no image is loaded (or when color is set)
+    if (dropZone) {
+      dropZone.style.display = hasImage ? "none" : "block";
+    }
+    if (pickFileBtn) {
+      pickFileBtn.style.display = hasImage ? "none" : "block";
+    }
+    if (urlRow) {
+      urlRow.style.display = hasImage ? "none" : "flex";
     }
   }
 
@@ -678,7 +822,9 @@
       return;
     }
     state.bgImageUrl = url;
+    state.bgColor = null;
     updateClearButtonVisibility();
+    updateImageControlsVisibility();
     
     // Reset image effects to defaults when loading new image
     state.bgBrightness = 100;
@@ -687,6 +833,10 @@
     state.bgColorize = false;
     state.bgBlur = 0;
     syncImageEffectsToUI();
+    
+    // Update bg color UI
+    var bgColorPicker = document.getElementById("bgColorPicker");
+    if (bgColorPicker) bgColorPicker.style.display = "none";
     
     var img = new Image();
     img.crossOrigin = "anonymous";
@@ -739,6 +889,7 @@
     if (state.bgImageUrl && state.bgImageUrl.indexOf("data:") === 0) URL.revokeObjectURL(state.bgImageUrl);
     state.bgImage = null;
     state.bgImageUrl = null;
+    state.bgColor = null;
     state.bgX = 0;
     state.bgY = 0;
     state.bgScale = 100;
@@ -999,6 +1150,9 @@
   bindInputs();
   initPresetColours();
   initPresetImages();
+  initBgColorPicker();
+  if (window.updateBgColorUI) window.updateBgColorUI();
+  updateImageControlsVisibility();
   setupDragDrop();
   setupCanvasDragZoom();
   setupDownload();

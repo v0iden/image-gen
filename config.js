@@ -12,5 +12,5 @@ window.APP_CONFIG = {
   ],
 
   /** Preset background images (paths under preset-images/). Add files to that folder and list names here. */
-  presetImages: ["bg1.png", "bg2.png", "bg3.jpeg"],
+  presetImages: [],
 };
