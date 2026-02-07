@@ -31,7 +31,7 @@
     color: "#ffffff",
     bgImage: null,
     bgImageUrl: null,
-    bgColor: null,
+    bgColor: "#2b3086",
     bgX: 0,
     bgY: 0,
     bgScale: 100,
@@ -452,7 +452,7 @@
       if (state.bgHue !== 0) params.set("bgHue", String(Math.round(state.bgHue)));
       if (state.bgColorize) params.set("bgColorize", "1");
       if (state.bgBlur !== 0) params.set("bgBlur", String(Math.round(state.bgBlur)));
-      if (state.bgColor) params.set("bgColor", state.bgColor.replace("#", "%23"));
+      if (state.bgColor && state.bgColor !== "#2b3086") params.set("bgColor", state.bgColor.replace("#", "%23"));
     var qs = params.toString();
     var url = qs ? window.location.pathname + "?" + qs : window.location.pathname;
     window.history.replaceState({}, "", url);
@@ -468,7 +468,12 @@
     if (params.has("description")) state.description = params.get("description");
     if (params.has("color")) state.color = params.get("color").replace("%23", "#");
     if (params.has("image")) loadBgFromUrl(params.get("image"));
-    if (params.has("bgColor")) state.bgColor = params.get("bgColor").replace("%23", "#");
+    if (params.has("bgColor")) {
+      state.bgColor = params.get("bgColor").replace("%23", "#");
+    } else {
+      // Set default if not in URL
+      state.bgColor = "#2b3086";
+    }
     var x = parseInt(params.get("bgX"), 10);
     var y = parseInt(params.get("bgY"), 10);
     var sc = parseInt(params.get("bgScale"), 10);
@@ -763,7 +768,7 @@
     });
     
     clearBtn.addEventListener("click", function () {
-      state.bgColor = null;
+      state.bgColor = "#2b3086"; // Reset to default instead of null
       updateBgColorUI();
       updateImageControlsVisibility();
       updateUrl();
@@ -771,6 +776,11 @@
     });
     
     initPresetBgColours();
+    
+    // Initialize with default color if not set
+    if (!state.bgColor) {
+      state.bgColor = "#2b3086";
+    }
     updateBgColorUI();
     
     // Expose updateBgColorUI for external calls (e.g., after readUrl)
